@@ -15,6 +15,8 @@ const KEY_TO_DIRECTION: Record<string, Direction> = {
 export class InputSystem {
   private keys = new Set<string>();
   private bufferedDirection: Direction = DIRECTIONS.none;
+  private mobileDirection: Direction = DIRECTIONS.none;
+  private gamepadDirection: Direction = DIRECTIONS.none;
   private bombBuffered = false;
   private pauseBuffered = false;
   private debugBuffered = false;
@@ -32,6 +34,13 @@ export class InputSystem {
   getIntent(): MoveIntent {
     this.pollGamepad();
     let direction = this.bufferedDirection;
+    this.bufferedDirection = DIRECTIONS.none;
+    if (direction.name === 'none' && this.mobileDirection.name !== 'none') {
+      direction = this.mobileDirection;
+    }
+    if (direction.name === 'none' && this.gamepadDirection.name !== 'none') {
+      direction = this.gamepadDirection;
+    }
     if (direction.name === 'none') {
       for (const code of ['ArrowUp', 'KeyW', 'ArrowDown', 'KeyS', 'ArrowLeft', 'KeyA', 'ArrowRight', 'KeyD']) {
         if (this.keys.has(code)) {
@@ -59,7 +68,7 @@ export class InputSystem {
   }
 
   setMobileDirection(name: keyof typeof DIRECTIONS): void {
-    this.bufferedDirection = DIRECTIONS[name];
+    this.mobileDirection = DIRECTIONS[name];
   }
 
   bufferBomb(): void {
@@ -122,7 +131,7 @@ export class InputSystem {
     if (this.wasPressed(pressed, 8)) this.debugBuffered = true;
 
     const direction = this.readGamepadDirection(gamepad);
-    if (direction.name !== 'none') this.bufferedDirection = direction;
+    this.gamepadDirection = direction;
 
     this.previousButtons = pressed;
   }
