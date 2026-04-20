@@ -203,6 +203,17 @@ export class HUD {
             </div>
           </div>
 
+          <div class="control-guide">
+            <div>
+              <strong>Keyboard</strong>
+              <span>WASD / Arrows move, Space drops bomb, P pauses.</span>
+            </div>
+            <div>
+              <strong>Xbox Controller</strong>
+              <span>Left stick / D-pad move, A drops bomb, Menu pauses.</span>
+            </div>
+          </div>
+
           <button class="action-button start-button" data-action="start" type="button">Start Stage ${snapshot.stage} - ${snapshot.difficulty.toUpperCase()}</button>
         </div>
       </div>`;

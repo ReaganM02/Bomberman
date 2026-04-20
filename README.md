@@ -26,6 +26,7 @@ npm run preview
 - Place bomb: `Space`
 - Pause/resume: `P` or `Escape`
 - Debug overlay: backtick key
+- Xbox-style controller: left stick or D-pad moves, `A` drops bomb, Menu/Start pauses, View/Back toggles debug
 - Touch/tablet landscape: on-screen movement pad and bomb button
 
 ## Gameplay

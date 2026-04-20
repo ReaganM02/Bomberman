@@ -368,6 +368,37 @@ body {
   background: linear-gradient(135deg, #bbf7d0, #22c55e 58%, #14532d);
 }
 
+.control-guide {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.control-guide div {
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 8px;
+  background: rgb(2 6 23 / 42%);
+  padding: 11px 12px;
+}
+
+.control-guide strong,
+.control-guide span {
+  display: block;
+}
+
+.control-guide strong {
+  font-size: 0.82rem;
+  font-weight: 950;
+  color: #f9fafb;
+}
+
+.control-guide span {
+  margin-top: 4px;
+  color: #9ca3af;
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
 .difficulty-button span {
   display: block;
   color: #9ca3af;
@@ -523,6 +554,10 @@ body {
   .gem-card {
     min-height: 88px;
     padding: 10px;
+  }
+
+  .control-guide {
+    grid-template-columns: 1fr;
   }
 }
 
