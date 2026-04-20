@@ -74,6 +74,12 @@ export class HUD {
       </div>
       ${this.renderCenter(snapshot)}
       <div class="toast-stack" data-toasts></div>
+      <div class="orientation-overlay">
+        <div>
+          <strong>Rotate to landscape</strong>
+          <span>BooMax plays best horizontally.</span>
+        </div>
+      </div>
       <div class="mobile-pad">
         <span></span><button data-dir="up" type="button">↑</button><span></span>
         <button data-dir="left" type="button">←</button><button data-dir="none" type="button">•</button><button data-dir="right" type="button">→</button>
@@ -229,22 +235,45 @@ export class HUD {
     this.root.querySelectorAll<HTMLElement>('[data-action]').forEach((button) => {
       button.addEventListener('click', () => {
         const action = button.dataset.action;
+        if (action === 'bomb') return;
         if (action === 'restart') this.onRestart?.();
         if (action === 'start') this.onStart?.();
         if (action === 'next-stage') this.onNextStage?.();
         if (action === 'menu') this.onMenu?.();
         if (action === 'pause') this.onPause?.();
-        if (action === 'bomb') this.onMobileBomb?.();
       });
     });
     this.root.querySelectorAll<HTMLElement>('[data-dir]').forEach((button) => {
       const direction = button.dataset.dir as 'up' | 'down' | 'left' | 'right' | 'none';
       button.addEventListener('pointerdown', (event) => {
         event.preventDefault();
+        button.setPointerCapture(event.pointerId);
         this.onMobileDirection?.(direction);
       });
-      button.addEventListener('pointerup', () => this.onMobileDirection?.('none'));
-      button.addEventListener('pointercancel', () => this.onMobileDirection?.('none'));
+      const clearDirection = (event: PointerEvent) => {
+        event.preventDefault();
+        if (button.hasPointerCapture(event.pointerId)) button.releasePointerCapture(event.pointerId);
+        this.onMobileDirection?.('none');
+      };
+      button.addEventListener('pointerup', clearDirection);
+      button.addEventListener('pointercancel', clearDirection);
+      button.addEventListener('lostpointercapture', () => this.onMobileDirection?.('none'));
+    });
+    this.root.querySelectorAll<HTMLElement>('.mobile-pad, .mobile-bomb').forEach((control) => {
+      control.addEventListener('contextmenu', (event) => event.preventDefault());
+    });
+    this.root.querySelectorAll<HTMLElement>('[data-action="bomb"]').forEach((button) => {
+      button.addEventListener('pointerdown', (event) => {
+        event.preventDefault();
+        button.setPointerCapture(event.pointerId);
+        this.onMobileBomb?.();
+      });
+      const releaseBomb = (event: PointerEvent) => {
+        event.preventDefault();
+        if (button.hasPointerCapture(event.pointerId)) button.releasePointerCapture(event.pointerId);
+      };
+      button.addEventListener('pointerup', releaseBomb);
+      button.addEventListener('pointercancel', releaseBomb);
     });
   }
 }

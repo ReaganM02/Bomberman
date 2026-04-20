@@ -94,6 +94,7 @@ export class Game {
   }
 
   private startRound(difficulty: Difficulty): void {
+    void this.requestMobileLandscape();
     this.audio.play('menu');
     this.clearRound();
     this.difficulty = difficulty;
@@ -115,6 +116,28 @@ export class Game {
     this.clearRound();
     this.state = 'menu';
     this.renderHud();
+  }
+
+  private async requestMobileLandscape(): Promise<void> {
+    const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
+    if (!coarsePointer) return;
+
+    try {
+      if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+        await document.documentElement.requestFullscreen({ navigationUI: 'hide' });
+      }
+    } catch {
+      // Fullscreen is best-effort on mobile browsers.
+    }
+
+    try {
+      const orientation = screen.orientation as ScreenOrientation & {
+        lock?: (orientation: 'landscape') => Promise<void>;
+      };
+      await orientation.lock?.('landscape');
+    } catch {
+      // iOS Safari and some Android browsers do not allow orientation lock.
+    }
   }
 
   private selectStage(stage: StageNumber): void {

@@ -483,6 +483,17 @@ body {
   font: inherit;
   font-weight: 900;
   backdrop-filter: blur(14px);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-pad button:active,
+.mobile-bomb:active {
+  border-color: rgb(250 204 21 / 78%);
+  background: rgb(31 41 55 / 88%);
+  transform: translateY(1px);
 }
 
 .mobile-bomb {
@@ -497,6 +508,10 @@ body {
 
 .hidden {
   display: none !important;
+}
+
+.orientation-overlay {
+  display: none;
 }
 
 @keyframes toast-in {
@@ -558,6 +573,46 @@ body {
 
   .control-guide {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (pointer: coarse) and (orientation: portrait) {
+  .orientation-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    pointer-events: auto;
+    background: rgb(3 7 18 / 88%);
+    backdrop-filter: blur(14px);
+  }
+
+  .orientation-overlay div {
+    width: min(340px, 100%);
+    border: 1px solid rgb(125 211 252 / 28%);
+    border-radius: 8px;
+    background: rgb(15 23 42 / 88%);
+    padding: 22px;
+    text-align: center;
+    box-shadow: 0 24px 70px rgb(0 0 0 / 38%);
+  }
+
+  .orientation-overlay strong,
+  .orientation-overlay span {
+    display: block;
+  }
+
+  .orientation-overlay strong {
+    font-size: 1.45rem;
+    font-weight: 950;
+  }
+
+  .orientation-overlay span {
+    margin-top: 8px;
+    color: #bae6fd;
+    line-height: 1.45;
   }
 }
 
