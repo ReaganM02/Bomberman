@@ -4,12 +4,21 @@ export class AudioSystem {
   private context?: AudioContext;
   private master?: GainNode;
   private compressor?: DynamicsCompressorNode;
+  private explosionNoiseBuffer?: AudioBuffer;
+  private activeExplosionVoices = 0;
+  private lastExplosionTime = -Infinity;
+  private readonly maxExplosionVoices = 3;
+  private readonly minExplosionInterval = 0.035;
 
   play(name: SoundName): void {
     const context = this.getContext();
     if (!context) return;
+    if (context.state === 'suspended') {
+      void context.resume().then(() => this.play(name));
+      return;
+    }
     if (name === 'explosion') {
-      this.playExplosion(context);
+      this.queueExplosion(context);
       return;
     }
 
@@ -55,25 +64,42 @@ export class AudioSystem {
 
   private createOutputChain(context: AudioContext): void {
     this.compressor = context.createDynamicsCompressor();
-    this.compressor.threshold.value = -18;
+    this.compressor.threshold.value = -12;
     this.compressor.knee.value = 18;
-    this.compressor.ratio.value = 7;
+    this.compressor.ratio.value = 4;
     this.compressor.attack.value = 0.004;
-    this.compressor.release.value = 0.18;
+    this.compressor.release.value = 0.12;
 
     this.master = context.createGain();
-    this.master.gain.value = 0.95;
+    this.master.gain.value = 0.82;
     this.master.connect(this.compressor).connect(context.destination);
+    this.explosionNoiseBuffer = this.createExplosionNoiseBuffer(context);
   }
 
-  private playExplosion(context: AudioContext): void {
+  private queueExplosion(context: AudioContext): void {
     const now = context.currentTime;
-    this.playExplosionThump(context, now);
+    if (now - this.lastExplosionTime < this.minExplosionInterval) {
+      return;
+    }
+    if (this.activeExplosionVoices >= this.maxExplosionVoices) {
+      return;
+    }
+
+    this.lastExplosionTime = now;
+    this.activeExplosionVoices += 1;
+    this.playExplosion(context, () => {
+      this.activeExplosionVoices = Math.max(0, this.activeExplosionVoices - 1);
+    });
+  }
+
+  private playExplosion(context: AudioContext, onEnded: () => void): void {
+    const now = context.currentTime;
+    this.playExplosionThump(context, now, onEnded);
     this.playExplosionCrack(context, now);
     this.playExplosionRumble(context, now);
   }
 
-  private playExplosionThump(context: AudioContext, now: number): void {
+  private playExplosionThump(context: AudioContext, now: number, onEnded: () => void): void {
     const oscillator = context.createOscillator();
     const gain = context.createGain();
     oscillator.type = 'sine';
@@ -84,17 +110,11 @@ export class AudioSystem {
     oscillator.connect(gain).connect(this.output);
     oscillator.start(now);
     oscillator.stop(now + 0.38);
+    oscillator.onended = onEnded;
   }
 
   private playExplosionCrack(context: AudioContext, now: number): void {
-    const bufferSize = Math.floor(context.sampleRate * 0.22);
-    const buffer = context.createBuffer(1, bufferSize, context.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i += 1) {
-      const decay = 1 - i / bufferSize;
-      data[i] = (Math.random() * 2 - 1) * decay * decay;
-    }
-
+    const buffer = this.explosionNoiseBuffer ?? this.createExplosionNoiseBuffer(context);
     const noise = context.createBufferSource();
     const filter = context.createBiquadFilter();
     const gain = context.createGain();
@@ -124,6 +144,17 @@ export class AudioSystem {
     oscillator.connect(filter).connect(gain).connect(this.output);
     oscillator.start(now + 0.02);
     oscillator.stop(now + 0.58);
+  }
+
+  private createExplosionNoiseBuffer(context: AudioContext): AudioBuffer {
+    const bufferSize = Math.floor(context.sampleRate * 0.24);
+    const buffer = context.createBuffer(1, bufferSize, context.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i += 1) {
+      const decay = 1 - i / bufferSize;
+      data[i] = (Math.random() * 2 - 1) * decay * decay;
+    }
+    return buffer;
   }
 }
 
