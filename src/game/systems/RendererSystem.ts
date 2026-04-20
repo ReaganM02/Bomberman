@@ -20,7 +20,6 @@ export class RendererSystem {
       canvas,
       antialias: true,
       powerPreference: 'high-performance',
-      preserveDrawingBuffer: true,
     });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.shadowMap.enabled = true;

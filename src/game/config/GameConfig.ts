@@ -29,6 +29,7 @@ export const GAME_CONFIG = {
   },
   visuals: {
     explosionStyle: 'realistic' as 'classic' | 'arcade' | 'realistic' | 'cyber',
+    explosionQuality: 'balanced' as 'low' | 'balanced' | 'high',
   },
   pickups: {
     dropChance: 0.38,

@@ -126,6 +126,9 @@ Power-ups spawn from destroyed crates.
 - Soft rounded robot characters.
 - Different bot body/accent colors.
 - Explosion effect includes heated blast tiles, flame columns, shockwave, sparks, smoke, scorch marks, and light flash.
+- Default explosion quality is `balanced` for live performance.
+- `balanced` keeps readable heat tiles, flame columns, shockwave, limited sparks, and limited scorch marks.
+- `high` enables heavier smoke and point-light flash effects.
 
 ## Important Files
 

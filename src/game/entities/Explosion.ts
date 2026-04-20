@@ -4,6 +4,7 @@ import type { GridPos } from '../core/Types';
 import type { RendererSystem } from '../systems/RendererSystem';
 
 type ExplosionStyle = typeof GAME_CONFIG.visuals.explosionStyle;
+type ExplosionQuality = typeof GAME_CONFIG.visuals.explosionQuality;
 
 interface Spark {
   mesh: THREE.Mesh;
@@ -73,6 +74,7 @@ export class Explosion {
 
   private readonly duration: number;
   private readonly style: ExplosionStyle;
+  private readonly quality: ExplosionQuality;
   private readonly palette;
   private readonly heatTiles = new THREE.Group();
   private readonly flameColumns = new THREE.Group();
@@ -80,7 +82,7 @@ export class Explosion {
   private readonly sparks: Spark[] = [];
   private readonly smoke: SmokePuff[] = [];
   private readonly scorchMarks: ScorchMark[] = [];
-  private readonly flashLight: THREE.PointLight;
+  private readonly flashLight?: THREE.PointLight;
 
   private readonly heatGeometry = new THREE.BoxGeometry(TILE_SIZE * 0.92, 0.08, TILE_SIZE * 0.92);
   private readonly flameGeometry = new THREE.ConeGeometry(TILE_SIZE * 0.34, 1.3, 7, 1, true);
@@ -100,12 +102,14 @@ export class Explosion {
     duration: number,
     private readonly renderer: RendererSystem,
     style: ExplosionStyle = GAME_CONFIG.visuals.explosionStyle,
+    quality: ExplosionQuality = GAME_CONFIG.visuals.explosionQuality,
   ) {
     this.duration = duration;
     this.timer = duration;
     this.style = style;
+    this.quality = quality;
     this.palette = STYLE_PALETTES[style];
-    this.group.name = `Explosion:${style}`;
+    this.group.name = `Explosion:${style}:${quality}`;
 
     this.heatMaterial = new THREE.MeshStandardMaterial({
       color: this.palette.core,
@@ -132,9 +136,12 @@ export class Explosion {
       opacity: 0.75,
       depthWrite: false,
     });
-    this.flashLight = new THREE.PointLight(this.palette.light, 4.2, 7.5, 2.2);
+    if (quality === 'high') {
+      this.flashLight = new THREE.PointLight(this.palette.light, 4.2, 7.5, 2.2);
+    }
 
-    this.group.add(this.heatTiles, this.flameColumns, this.shockwave, this.flashLight);
+    this.group.add(this.heatTiles, this.flameColumns, this.shockwave);
+    if (this.flashLight) this.group.add(this.flashLight);
     this.buildBlastTiles();
     this.buildShockwave();
     this.buildParticles();
@@ -155,7 +162,7 @@ export class Explosion {
 
     this.shockwave.scale.setScalar(0.35 + age * 3.8);
     this.shockwaveMaterial.opacity = Math.max(0, 0.62 * (1 - age * 1.7));
-    this.flashLight.intensity = 5.8 * Math.max(0, 1 - age * 2.2);
+    if (this.flashLight) this.flashLight.intensity = 5.8 * Math.max(0, 1 - age * 2.2);
 
     this.updateSparks(delta, age);
     this.updateSmoke(delta, age);
@@ -194,20 +201,22 @@ export class Explosion {
       flame.position.copy(world);
       flame.position.y = 0.62;
       flame.rotation.y = (tile.x * 17 + tile.y * 31) % Math.PI;
-      this.flameColumns.add(flame);
+      if (this.quality !== 'low') this.flameColumns.add(flame);
 
-      const markMaterial = new THREE.MeshBasicMaterial({
-        color: 0x09090b,
-        transparent: true,
-        opacity: 0,
-        depthWrite: false,
-      });
-      const mark = new THREE.Mesh(this.scorchGeometry, markMaterial);
-      mark.rotation.x = -Math.PI / 2;
-      mark.position.copy(world);
-      mark.position.y = 0.012;
-      this.scorchMarks.push({ mesh: mark, material: markMaterial });
-      this.group.add(mark);
+      if (this.quality === 'high' || (this.quality === 'balanced' && this.scorchMarks.length < 4)) {
+        const markMaterial = new THREE.MeshBasicMaterial({
+          color: 0x09090b,
+          transparent: true,
+          opacity: 0,
+          depthWrite: false,
+        });
+        const mark = new THREE.Mesh(this.scorchGeometry, markMaterial);
+        mark.rotation.x = -Math.PI / 2;
+        mark.position.copy(world);
+        mark.position.y = 0.012;
+        this.scorchMarks.push({ mesh: mark, material: markMaterial });
+        this.group.add(mark);
+      }
     }
   }
 
@@ -220,17 +229,23 @@ export class Explosion {
     ring.position.copy(world);
     ring.position.y = 0.18;
     this.shockwave.add(ring);
-    this.flashLight.position.copy(world);
-    this.flashLight.position.y = 1.1;
+    if (this.flashLight) {
+      this.flashLight.position.copy(world);
+      this.flashLight.position.y = 1.1;
+    }
   }
 
   private buildParticles(): void {
-    const sparkCountPerTile = this.style === 'realistic' ? 5 : 4;
-    const smokeCountPerTile = this.style === 'cyber' ? 1 : 2;
+    if (this.quality === 'low') return;
+
+    const sparkCountPerTile = this.quality === 'high' ? (this.style === 'realistic' ? 5 : 4) : 1;
+    const smokeCountPerTile = this.quality === 'high' ? (this.style === 'cyber' ? 1 : 2) : 0;
+    const maxSparks = this.quality === 'high' ? 80 : 10;
 
     for (const tile of this.tiles) {
       const world = this.renderer.gridToWorld(tile);
       for (let i = 0; i < sparkCountPerTile; i += 1) {
+        if (this.sparks.length >= maxSparks) break;
         const spark = new THREE.Mesh(this.sparkGeometry, this.sparkMaterial);
         spark.position.set(
           world.x + (Math.random() - 0.5) * 0.36,
